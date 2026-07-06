@@ -22,16 +22,27 @@ export function ShadowingTranscript({
 }: ShadowingTranscriptProps) {
   const activeRef = useRef<HTMLButtonElement | null>(null)
 
-  // Auto-scroll active sentence into view whenever it changes.
-  // Respect prefers-reduced-motion: use 'auto' (instant) when user has reduced motion enabled.
+  // Auto-center the active sentence WITHIN the transcript viewport only.
+  // element.scrollIntoView() walks every scrollable ancestor (including the
+  // outer <main>), which scrolled the whole page and pushed the video offscreen.
+  // Scroll only the ScrollArea viewport so the page layout stays put.
   useEffect(() => {
-    if (activeRef.current) {
-      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      activeRef.current.scrollIntoView({
-        block: 'center',
-        behavior: reducedMotion ? 'auto' : 'smooth',
-      })
-    }
+    const el = activeRef.current
+    if (!el) return
+
+    const viewport = el.closest<HTMLElement>('[data-slot="scroll-area-viewport"]')
+    if (!viewport) return
+
+    // Offset of the element relative to the viewport's current scroll position,
+    // then adjust so the element ends up centered in the viewport.
+    const elRect = el.getBoundingClientRect()
+    const vpRect = viewport.getBoundingClientRect()
+    const delta = elRect.top - vpRect.top - viewport.clientHeight / 2 + el.clientHeight / 2
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    viewport.scrollTo({
+      top: Math.max(0, viewport.scrollTop + delta),
+      behavior: reducedMotion ? 'auto' : 'smooth',
+    })
   }, [activeIndex])
 
   return (
