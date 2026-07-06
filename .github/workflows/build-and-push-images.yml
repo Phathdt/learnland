@@ -36,7 +36,7 @@ jobs:
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/learnland-${{ matrix.name }}
           tags: |
-            type=semver,pattern={{version}}
+            type=semver,pattern={{raw}}
             type=raw,value=latest
 
       - name: Build and push
