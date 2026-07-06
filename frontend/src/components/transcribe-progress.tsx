@@ -5,6 +5,7 @@ const STAGE_LABELS: Record<NonNullable<TranscribeStage>, string> = {
   caption_check: 'Kiểm tra phụ đề…',
   download: 'Tải audio…',
   transcribe: 'Đang nhận diện giọng nói…',
+  ipa: 'Đang tạo phiên âm IPA…',
 }
 
 interface TranscribeProgressProps {

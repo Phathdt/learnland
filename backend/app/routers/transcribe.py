@@ -20,6 +20,7 @@ from app.schemas import TranscribeRequest, TranscriptOut
 from app.services.url_utils import InvalidYouTubeURLError, extract_video_id
 from app.services.youtube import YouTubeError, download_audio, extract_info, get_caption
 from app.services.transcriber import TranscribeError, transcribe
+from app.services.ipa import generate_ipa
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -120,6 +121,23 @@ async def _transcribe_stream(url: str, db: Session) -> AsyncGenerator[str, None]
             segments = result.segments
             source = "whisper"
             language = result.language
+
+        # IPA: best-effort phonetic transcription for English segments only.
+        # Any failure is swallowed — transcript still saves without IPA.
+        if segments and language and language.lower().startswith("en"):
+            try:
+                yield _sse("progress", {"stage": "ipa", "percent": 0})
+                texts = [s["text"] for s in segments]
+                ipa_result = await loop.run_in_executor(None, generate_ipa, texts)
+                for seg, ipa in zip(segments, ipa_result.ipa):
+                    seg["ipa"] = ipa
+                yield _sse("progress", {"stage": "ipa", "percent": 100})
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "IPA generation skipped for video %r: %s",
+                    video_id,
+                    type(exc).__name__,
+                )
 
         saved = repo.create(db, transcript=Transcript(
             video_url=url,

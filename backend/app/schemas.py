@@ -23,6 +23,7 @@ class Segment(BaseModel):
     start: float  # seconds
     end: float    # seconds
     text: str
+    ipa: Optional[str] = None
 
 
 class TranscriptOut(BaseModel):

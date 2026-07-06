@@ -12,6 +12,7 @@ export interface Segment {
   start: number
   end: number
   text: string
+  ipa?: string | null
 }
 
 interface UseActiveSegmentOptions {

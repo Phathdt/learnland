@@ -8,7 +8,7 @@ export const apiClient = axios.create({
 // --- SSE types ---
 
 export interface ProgressEvent {
-  stage: 'caption_check' | 'download' | 'transcribe'
+  stage: 'caption_check' | 'download' | 'transcribe' | 'ipa'
   percent: number
 }
 
@@ -16,6 +16,7 @@ export interface TranscriptSegment {
   start: number
   end: number
   text: string
+  ipa?: string | null
 }
 
 export interface TranscriptResult {

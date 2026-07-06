@@ -51,6 +51,9 @@ export function ShadowingTranscript({
               aria-current={isActive ? 'true' : undefined}
             >
               {seg.text}
+              {seg.ipa && (
+                <span className="block text-xs text-muted-foreground font-mono">{seg.ipa}</span>
+              )}
             </button>
           )
         })}

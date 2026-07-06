@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { streamTranscribe, type ProgressEvent, type TranscriptResult } from '@/api/client'
 
-export type TranscribeStage = 'caption_check' | 'download' | 'transcribe' | null
+export type TranscribeStage = 'caption_check' | 'download' | 'transcribe' | 'ipa' | null
 
 interface TranscribeState {
   isRunning: boolean

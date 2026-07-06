@@ -3,11 +3,14 @@
 Services (youtube, transcriber) are monkeypatched so no network calls are made.
 """
 
+import copy
+
 import pytest
 from unittest.mock import MagicMock, patch
 
 from tests.conftest import collect_sse, seed_transcript
 from app.services.youtube import VideoInfo, YouTubeError, Caption
+from app.services.ipa import IpaError, IpaResult
 
 
 VIDEO_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
@@ -43,12 +46,17 @@ def test_transcribe_caption_path(client, db, monkeypatch):
         "app.routers.transcribe.get_caption",
         lambda url: Caption(
             text="Never gonna give you up never gonna let you down",
-            segments=SAMPLE_SEGMENTS,
+            segments=copy.deepcopy(SAMPLE_SEGMENTS),
             language="en",
         ),
     )
     whisper_mock = MagicMock()
     monkeypatch.setattr("app.routers.transcribe.transcribe", whisper_mock)
+    # IPA is best-effort; patch it out to avoid needing a real API key in tests
+    monkeypatch.setattr(
+        "app.routers.transcribe.generate_ipa",
+        lambda texts: IpaResult(ipa=["" for _ in texts]),
+    )
 
     with client.stream("POST", "/api/transcribe", json={"url": VIDEO_URL}) as resp:
         events = collect_sse(resp)
@@ -110,6 +118,10 @@ def test_transcribe_whisper_path(client, db, monkeypatch, tmp_path):
         )
 
     monkeypatch.setattr("app.routers.transcribe.transcribe", _fake_transcribe)
+    monkeypatch.setattr(
+        "app.routers.transcribe.generate_ipa",
+        lambda texts: IpaResult(ipa=["" for _ in texts]),
+    )
 
     with client.stream("POST", "/api/transcribe", json={"url": VIDEO_URL}) as resp:
         events = collect_sse(resp)
@@ -183,3 +195,112 @@ def test_transcribe_invalid_url_returns_error(client, db):
 
     error_events = [e for e in events if e.get("event") == "error"]
     assert error_events
+
+
+# ---------------------------------------------------------------------------
+# IPA integration — Phase 2
+# ---------------------------------------------------------------------------
+
+def test_transcribe_ipa_attached_on_success(client, db, monkeypatch):
+    """When generate_ipa succeeds, each segment carries an 'ipa' string."""
+    sample_ipa = ["ˈnɛvər ˈɡɒnə ɡɪv juː ʌp", "ˈnɛvər ˈɡɒnə lɛt juː daʊn"]
+
+    monkeypatch.setattr(
+        "app.routers.transcribe.extract_info",
+        lambda url: _make_info(has_caption=True),
+    )
+    monkeypatch.setattr(
+        "app.routers.transcribe.get_caption",
+        lambda url: Caption(
+            text="Never gonna give you up never gonna let you down",
+            segments=copy.deepcopy(SAMPLE_SEGMENTS),
+            language="en",
+        ),
+    )
+    monkeypatch.setattr("app.routers.transcribe.transcribe", MagicMock())
+    monkeypatch.setattr(
+        "app.routers.transcribe.generate_ipa",
+        lambda texts: IpaResult(ipa=sample_ipa),
+    )
+
+    with client.stream("POST", "/api/transcribe", json={"url": VIDEO_URL}) as resp:
+        events = collect_sse(resp)
+
+    done_events = [e for e in events if e.get("event") == "done"]
+    assert done_events, f"No 'done' event. Got: {events}"
+    segments = done_events[0]["data"]["segments"]
+    assert segments, "Expected segments in done payload"
+    assert segments[0].get("ipa") == sample_ipa[0]
+    assert segments[1].get("ipa") == sample_ipa[1]
+
+    # IPA progress stage emitted
+    ipa_progress = [
+        e for e in events
+        if e.get("event") == "progress" and e["data"].get("stage") == "ipa"
+    ]
+    assert ipa_progress, "Expected at least one 'ipa' progress event"
+
+
+def test_transcribe_ipa_failure_still_saves(client, db, monkeypatch):
+    """When generate_ipa raises IpaError, transcript saves without ipa keys; no error event."""
+    monkeypatch.setattr(
+        "app.routers.transcribe.extract_info",
+        lambda url: _make_info(has_caption=True),
+    )
+    monkeypatch.setattr(
+        "app.routers.transcribe.get_caption",
+        lambda url: Caption(
+            text="Never gonna give you up never gonna let you down",
+            segments=copy.deepcopy(SAMPLE_SEGMENTS),
+            language="en",
+        ),
+    )
+    monkeypatch.setattr("app.routers.transcribe.transcribe", MagicMock())
+    monkeypatch.setattr(
+        "app.routers.transcribe.generate_ipa",
+        lambda texts: (_ for _ in ()).throw(IpaError("no key")),
+    )
+
+    with client.stream("POST", "/api/transcribe", json={"url": VIDEO_URL}) as resp:
+        events = collect_sse(resp)
+
+    # Must still produce a 'done' event — not an 'error'
+    done_events = [e for e in events if e.get("event") == "done"]
+    error_events = [e for e in events if e.get("event") == "error"]
+    assert done_events, f"Expected 'done' even when IPA fails. Got: {events}"
+    assert not error_events, f"IPA failure must not emit error event. Got: {error_events}"
+
+    # Segments present but without 'ipa' keys
+    segments = done_events[0]["data"]["segments"]
+    assert segments, "Expected segments saved even without IPA"
+    for seg in segments:
+        assert "ipa" not in seg or seg["ipa"] is None, (
+            "Segment should not carry 'ipa' when IPA generation failed"
+        )
+
+
+def test_transcribe_ipa_skipped_for_non_english(client, db, monkeypatch):
+    """Non-English language skips IPA; transcript saves normally."""
+    ipa_mock = MagicMock()
+    monkeypatch.setattr("app.routers.transcribe.generate_ipa", ipa_mock)
+    monkeypatch.setattr(
+        "app.routers.transcribe.extract_info",
+        lambda url: _make_info(has_caption=True),
+    )
+    monkeypatch.setattr(
+        "app.routers.transcribe.get_caption",
+        lambda url: Caption(
+            text="Xin chào thế giới",
+            segments=[{"start": 0.0, "end": 2.0, "text": "Xin chào thế giới"}],
+            language="vi",
+        ),
+    )
+    monkeypatch.setattr("app.routers.transcribe.transcribe", MagicMock())
+
+    with client.stream("POST", "/api/transcribe", json={"url": VIDEO_URL}) as resp:
+        events = collect_sse(resp)
+
+    done_events = [e for e in events if e.get("event") == "done"]
+    assert done_events, f"Expected 'done' event. Got: {events}"
+    ipa_mock.assert_not_called()
+
