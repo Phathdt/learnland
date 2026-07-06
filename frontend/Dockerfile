@@ -11,10 +11,9 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Backend URL is baked into the bundle at build time (Vite env).
-ARG VITE_API_URL=http://localhost:8000
-ENV VITE_API_URL=$VITE_API_URL
-
+# Backend URL is baked into the bundle at build time. Vite reads it from the
+# committed .env file — do NOT set VITE_API_URL as a shell/ENV var here, since
+# OS env vars take priority over .env and would silently override it.
 COPY . .
 RUN pnpm build
 

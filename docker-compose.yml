@@ -38,10 +38,8 @@ services:
 
   frontend:
     build:
+      # VITE_API_URL is baked in at build time from frontend/.env (Vite reads it).
       context: ./frontend
-      args:
-        # Browser calls the backend directly (CORS-enabled). Baked at build time.
-        VITE_API_URL: http://localhost:8000
     restart: unless-stopped
     ports:
       - "8080:80"
