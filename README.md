@@ -1,16 +1,16 @@
 # learnland
 
-Học shadowing và luyện phát âm tiếng Anh từ video YouTube. Nhập một URL, learnland lấy transcript (caption có sẵn hoặc tự transcribe bằng Whisper), sinh phiên âm IPA, rồi phát video kèm transcript đồng bộ theo thời gian để bạn nghe và nhại lại.
+Learn shadowing and practice English pronunciation from YouTube videos. Paste a URL and learnland pulls the transcript (existing captions, or Whisper transcription as a fallback), generates IPA phonetics, then plays the video with a time-synced transcript so you can listen and repeat.
 
 Monorepo: FastAPI backend + React frontend + Postgres.
 
-## Tính năng
+## Features
 
-- Lấy transcript từ YouTube caption, fallback sang faster-whisper khi video không có caption
-- Sinh phiên âm IPA offline (g2p-en → ARPAbet → IPA) cho từng câu
-- Shadowing player: nhúng video YouTube, điều khiển transport, transcript highlight đồng bộ theo thời gian
-- Lịch sử transcript lưu trong Postgres, xem lại bất kỳ lúc nào
-- Tiến trình transcribe realtime qua Server-Sent Events (SSE)
+- Pull transcripts from YouTube captions, falling back to faster-whisper when a video has none
+- Generate offline IPA phonetics (g2p-en → ARPAbet → IPA) per sentence
+- Shadowing player: embedded YouTube video, transport controls, transcript highlighted in sync with playback
+- Transcript history stored in Postgres, replayable anytime
+- Realtime transcribe progress over Server-Sent Events (SSE)
 
 ## Stack
 
