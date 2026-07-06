@@ -1,37 +1,28 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+/**
+ * Root layout: persistent history sidebar (desktop) + mobile drawer,
+ * with the routed page rendered in the main panel via <Outlet>.
+ */
+
+import { useEffect, useState } from 'react'
+import { Outlet, useNavigate, useParams } from '@tanstack/react-router'
 import { Menu, X } from 'lucide-react'
-import { Toaster } from '@/components/ui/sonner'
 import { Button } from '@/components/ui/button'
-import { TranscribeForm } from '@/components/transcribe-form'
-import { TranscribeProgress } from '@/components/transcribe-progress'
-import { TranscriptView } from '@/components/transcript-view'
 import { HistorySidebar } from '@/components/history-sidebar'
-import { useTranscribe } from '@/hooks/use-transcribe'
 import { cn } from '@/lib/utils'
 import type { TranscriptResult } from '@/api/client'
 
-export default function App() {
-  const queryClient = useQueryClient()
-  const [selected, setSelected] = useState<TranscriptResult | null>(null)
+export function AppLayout() {
+  const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const handleDone = useCallback(
-    (result: TranscriptResult) => {
-      setSelected(result)
-      // Refresh the history list
-      queryClient.invalidateQueries({ queryKey: ['transcripts'] })
-    },
-    [queryClient],
-  )
+  // Highlight the sidebar item matching the current /video/$id route, if any.
+  const params = useParams({ strict: false }) as { id?: string }
+  const selectedId = params.id ?? null
 
-  const { isRunning, stage, percent, start } = useTranscribe(handleDone)
-
-  // On mobile, selecting a history item should also close the drawer.
-  const handleSelect = useCallback((transcript: TranscriptResult) => {
-    setSelected(transcript)
+  function handleSelect(transcript: TranscriptResult) {
+    navigate({ to: '/video/$id', params: { id: transcript.id } })
     setDrawerOpen(false)
-  }, [])
+  }
 
   // Close the drawer with Escape for keyboard users.
   useEffect(() => {
@@ -47,14 +38,16 @@ export default function App() {
     <div className="flex h-dvh overflow-hidden">
       {/* Sidebar — persistent on desktop (md+) */}
       <div className="hidden md:flex md:w-72 flex-shrink-0 flex-col overflow-hidden">
-        <HistorySidebar selectedId={selected?.id ?? null} onSelect={handleSelect} />
+        <HistorySidebar selectedId={selectedId} onSelect={handleSelect} />
       </div>
 
       {/* Mobile drawer: scrim + sliding panel */}
       <div
         className={cn(
           'fixed inset-0 z-40 md:hidden motion-safe:transition-opacity motion-safe:duration-200',
-          drawerOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
+          drawerOpen
+            ? 'pointer-events-auto opacity-100'
+            : 'pointer-events-none opacity-0'
         )}
         aria-hidden={!drawerOpen}
       >
@@ -72,7 +65,7 @@ export default function App() {
             'absolute inset-y-0 left-0 flex w-[85%] max-w-xs flex-col bg-sidebar shadow-xl',
             'motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out',
             'pl-[env(safe-area-inset-left)]',
-            drawerOpen ? 'translate-x-0' : '-translate-x-full',
+            drawerOpen ? 'translate-x-0' : '-translate-x-full'
           )}
           role="dialog"
           aria-modal="true"
@@ -94,7 +87,7 @@ export default function App() {
           </div>
           <div className="flex-1 overflow-hidden">
             <HistorySidebar
-              selectedId={selected?.id ?? null}
+              selectedId={selectedId}
               onSelect={handleSelect}
               showHeader={false}
             />
@@ -114,19 +107,19 @@ export default function App() {
           >
             <Menu />
           </Button>
-          <h1 className="text-xl font-bold">learnland</h1>
+          <button
+            type="button"
+            onClick={() => navigate({ to: '/' })}
+            className="text-xl font-bold"
+          >
+            learnland
+          </button>
         </header>
 
-        <TranscribeForm isRunning={isRunning} onSubmit={start} />
-
-        <TranscribeProgress stage={stage} percent={percent} isRunning={isRunning} />
-
         <div className="flex-1 overflow-auto">
-          <TranscriptView transcript={selected} />
+          <Outlet />
         </div>
       </main>
-
-      <Toaster richColors position="top-right" />
     </div>
   )
 }
