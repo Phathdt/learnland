@@ -48,6 +48,7 @@ export interface UseYouTubePlayerReturn {
   pause: () => void
   seekTo: (seconds: number) => void
   getCurrentTime: () => number
+  setPlaybackRate: (rate: number) => void
 }
 
 export function useYouTubePlayer(videoId: string | undefined): UseYouTubePlayerReturn {
@@ -108,6 +109,9 @@ export function useYouTubePlayer(videoId: string | undefined): UseYouTubePlayerR
     playerRef.current?.seekTo(seconds, true)
   }, [])
   const getCurrentTime = useCallback(() => playerRef.current?.getCurrentTime() ?? 0, [])
+  const setPlaybackRate = useCallback((rate: number) => {
+    playerRef.current?.setPlaybackRate(rate)
+  }, [])
 
-  return { containerRef, ready, isPlaying, play, pause, seekTo, getCurrentTime }
+  return { containerRef, ready, isPlaying, play, pause, seekTo, getCurrentTime, setPlaybackRate }
 }

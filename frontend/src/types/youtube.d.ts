@@ -43,6 +43,8 @@ declare namespace YT {
     getCurrentTime(): number
     getPlayerState(): PlayerState
     destroy(): void
+    setPlaybackRate(suggestedRate: number): void
+    getPlaybackRate(): number
   }
 }
 

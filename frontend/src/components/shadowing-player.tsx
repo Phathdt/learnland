@@ -1,17 +1,19 @@
 /**
  * Full shadowing player: embeds the YouTube video, transport controls,
- * and the time-synced transcript. Wires useYouTubePlayer + useActiveSegment.
+ * time-synced transcript, và hướng dẫn 6 bước shadowing.
+ * Wires useYouTubePlayer + useActiveSegment.
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useYouTubePlayer } from '@/hooks/use-youtube-player'
 import { useActiveSegment } from '@/hooks/use-active-segment'
 import type { Segment } from '@/hooks/use-active-segment'
 import { YouTubePlayer } from '@/components/youtube-player'
 import { PlayerControls } from '@/components/player-controls'
 import { ShadowingTranscript } from '@/components/shadowing-transcript'
+import { ShadowingStepGuide } from '@/components/shadowing-step-guide'
 
-const SEEK_DELTA = 5 // seconds
+const SEEK_DELTA = 5 // giây
 
 interface ShadowingPlayerProps {
   videoId: string
@@ -19,8 +21,20 @@ interface ShadowingPlayerProps {
 }
 
 export function ShadowingPlayer({ videoId, segments }: ShadowingPlayerProps) {
-  const { containerRef, ready, isPlaying, play, pause, seekTo, getCurrentTime } =
+  const { containerRef, ready, isPlaying, play, pause, seekTo, getCurrentTime, setPlaybackRate } =
     useYouTubePlayer(videoId)
+
+  // Tốc độ phát (0.5 / 0.75 / 1.0); mặc định 1x
+  const [speed, setSpeed] = useState(1)
+  // Hiển thị hay ẩn transcript
+  const [showTranscript, setShowTranscript] = useState(true)
+  // Bước shadowing đang active (null = chưa chọn bước nào)
+  const [activeStep, setActiveStep] = useState<number | null>(null)
+
+  // Re-apply tốc độ sau khi player sẵn sàng hoặc tốc độ thay đổi
+  useEffect(() => {
+    if (ready) setPlaybackRate(speed)
+  }, [ready, speed, setPlaybackRate])
 
   const { activeIndex, seekToSegment } = useActiveSegment({
     segments,
@@ -55,8 +69,18 @@ export function ShadowingPlayer({ videoId, segments }: ShadowingPlayerProps) {
     seekToSegment(target)
   }, [activeIndex, segments.length, seekToSegment])
 
+  // Áp preset từ step guide: set speed, showTranscript, và đánh dấu bước active
+  const applyStep = useCallback((s: { id: number; showTranscript: boolean; speed: number }) => {
+    setSpeed(s.speed)
+    setShowTranscript(s.showTranscript)
+    setActiveStep(s.id)
+  }, [])
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Hướng dẫn 6 bước — hiển thị phía trên player */}
+      <ShadowingStepGuide activeStep={activeStep} onSelectStep={applyStep} />
+
       <YouTubePlayer containerRef={containerRef} />
 
       <PlayerControls
@@ -70,13 +94,20 @@ export function ShadowingPlayer({ videoId, segments }: ShadowingPlayerProps) {
         onSeekForward={handleSeekForward}
         onPrevSegment={handlePrevSegment}
         onNextSegment={handleNextSegment}
+        speed={speed}
+        onSpeedChange={setSpeed}
+        showTranscript={showTranscript}
+        onToggleTranscript={() => setShowTranscript((v) => !v)}
       />
 
-      <ShadowingTranscript
-        segments={segments}
-        activeIndex={activeIndex}
-        onSegmentClick={handleSegmentClick}
-      />
+      {/* Ẩn hoàn toàn (không render) khi showTranscript = false */}
+      {showTranscript && (
+        <ShadowingTranscript
+          segments={segments}
+          activeIndex={activeIndex}
+          onSegmentClick={handleSegmentClick}
+        />
+      )}
     </div>
   )
 }
