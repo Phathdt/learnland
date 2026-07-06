@@ -37,11 +37,11 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <CardTitle className="text-base font-semibold leading-tight">
             {transcript.title ?? transcript.video_id}
           </CardTitle>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={SOURCE_VARIANTS[transcript.source] ?? 'outline'}>
               {SOURCE_LABELS[transcript.source] ?? transcript.source}
             </Badge>
@@ -61,7 +61,7 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
             segments={transcript.segments!}
           />
         ) : (
-          <ScrollArea className="h-96 rounded-md border p-4">
+          <ScrollArea className="h-64 sm:h-96 rounded-md border p-4">
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{transcript.content}</p>
           </ScrollArea>
         )}

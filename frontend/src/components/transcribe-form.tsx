@@ -20,7 +20,7 @@ export function TranscribeForm({ isRunning, onSubmit }: TranscribeFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
       <label htmlFor="yt-url" className="sr-only">
         YouTube URL
       </label>
@@ -31,10 +31,14 @@ export function TranscribeForm({ isRunning, onSubmit }: TranscribeFormProps) {
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         disabled={isRunning}
-        className="flex-1"
+        className="flex-1 h-11 text-base sm:h-9 sm:text-sm"
         aria-label="YouTube video URL"
       />
-      <Button type="submit" disabled={isRunning || !url.trim()}>
+      <Button
+        type="submit"
+        disabled={isRunning || !url.trim()}
+        className="h-11 w-full sm:h-9 sm:w-auto"
+      >
         {isRunning ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />

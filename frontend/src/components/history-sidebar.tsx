@@ -9,9 +9,11 @@ import type { TranscriptResult } from '@/api/client'
 interface HistorySidebarProps {
   selectedId: string | null
   onSelect: (transcript: TranscriptResult) => void
+  /** Hide the built-in header (e.g. when the mobile drawer renders its own). */
+  showHeader?: boolean
 }
 
-export function HistorySidebar({ selectedId, onSelect }: HistorySidebarProps) {
+export function HistorySidebar({ selectedId, onSelect, showHeader = true }: HistorySidebarProps) {
   const { data: transcripts, isLoading } = useQuery({
     queryKey: ['transcripts'],
     queryFn: fetchTranscripts,
@@ -20,11 +22,13 @@ export function HistorySidebar({ selectedId, onSelect }: HistorySidebarProps) {
 
   return (
     <aside className="flex flex-col h-full border-r">
-      <div className="px-4 py-3 border-b">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-          Lịch sử
-        </h2>
-      </div>
+      {showHeader && (
+        <div className="px-4 py-3 border-b">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Lịch sử
+          </h2>
+        </div>
+      )}
 
       <ScrollArea className="flex-1">
         {isLoading && (
@@ -50,7 +54,7 @@ export function HistorySidebar({ selectedId, onSelect }: HistorySidebarProps) {
                   type="button"
                   onClick={() => onSelect(item)}
                   className={cn(
-                    'w-full text-left rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    'w-full min-h-11 md:min-h-0 text-left rounded-md px-3 py-2.5 md:py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     selectedId === item.id && 'bg-accent text-accent-foreground font-medium',
                   )}
                   aria-current={selectedId === item.id ? 'true' : undefined}

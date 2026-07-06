@@ -22,16 +22,22 @@ export function ShadowingTranscript({
 }: ShadowingTranscriptProps) {
   const activeRef = useRef<HTMLButtonElement | null>(null)
 
-  // Auto-scroll active sentence into view whenever it changes
+  // Auto-scroll active sentence into view whenever it changes.
+  // Respect prefers-reduced-motion: use 'auto' (instant) when user has reduced motion enabled.
   useEffect(() => {
     if (activeRef.current) {
-      activeRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      activeRef.current.scrollIntoView({
+        block: 'center',
+        behavior: reducedMotion ? 'auto' : 'smooth',
+      })
     }
   }, [activeIndex])
 
   return (
-    <ScrollArea className="h-72 rounded-md border">
-      <div className="p-3 flex flex-col gap-0.5">
+    // h-[50dvh] on mobile to use more screen real estate; h-72 on md+
+    <ScrollArea className="h-[50dvh] md:h-72 rounded-md border">
+      <div className="p-3 flex flex-col gap-1">
         {segments.map((seg, i) => {
           const isActive = i === activeIndex
           return (
@@ -41,7 +47,8 @@ export function ShadowingTranscript({
               type="button"
               onClick={() => onSegmentClick(i)}
               className={cn(
-                'w-full text-left rounded px-3 py-1.5 text-sm leading-relaxed transition-colors',
+                // min-h-11 ensures ≥44px touch target on mobile; py-3 for comfortable tap area
+                'w-full text-left rounded px-3 py-3 md:py-1.5 min-h-11 text-sm leading-relaxed transition-colors',
                 'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isActive
                   ? 'bg-primary/10 text-primary font-semibold'
