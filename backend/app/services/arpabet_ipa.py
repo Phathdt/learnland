@@ -59,6 +59,25 @@ VOWELS: frozenset[str] = frozenset({
 })
 
 # ---------------------------------------------------------------------------
+# Syllabic-n triggers — consonants after which an unstressed AH0 + N collapses
+# to a syllabic /n/ (the schwa is dropped). This is the OALD-US treatment of
+# the '-tion/-sion/-en/-on' family:
+#     station  → ˈsteɪʃn   (not ˈsteɪʃən)
+#     question → ˈkwestʃn
+#     button   → ˈbʌtn
+#     listen   → ˈlɪsn
+#     seven    → ˈsevn
+# The drop only happens after CORONAL OBSTRUENTS (t, d, s, z, ʃ, ʒ, tʃ, dʒ,
+# θ, ð) and the labiodentals f/v — the places of articulation where English
+# actually forms a syllabic nasal. After other consonants the schwa is kept:
+#     happen → ˈhæpən   bacon → ˈbeɪkən   common → ˈkɒmən   heron → ˈherən
+# ---------------------------------------------------------------------------
+
+SYLLABIC_N_TRIGGERS: frozenset[str] = frozenset({
+    'T', 'D', 'S', 'Z', 'SH', 'ZH', 'CH', 'JH', 'TH', 'DH', 'F', 'V',
+})
+
+# ---------------------------------------------------------------------------
 # Legal two-consonant onset clusters (English phonotactics, ARPAbet labels).
 # Used by the syllabifier's maximal-onset step: when two consonants sit
 # between vowels, the split point depends on whether they form a valid
@@ -266,11 +285,50 @@ def _apply_flapping(phones: list[str]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Syllabic-n — OALD-US collapse of unstressed schwa before /n/
+# ---------------------------------------------------------------------------
+
+def _apply_syllabic_n(phones: list[str]) -> list[str]:
+    """Drop an unstressed AH0 sitting between a coronal/labiodental and N.
+
+    Turns the CMUdict sequence  <trigger> AH0 N  into  <trigger> N, giving a
+    syllabic /n/ instead of a schwa+n. This matches OALD-US for the common
+    '-tion/-sion/-en' family:
+        station  S T EY1 SH AH0 N  → ...SH N  → ˈsteɪʃn
+        question K W EH1 S CH AH0 N → ...CH N → ˈkwestʃn
+        button   B AH1 T AH0 N      → ...T N  → ˈbʌtn
+    The AH0 is only removed after a trigger consonant (SYLLABIC_N_TRIGGERS);
+    after other places (p/k/m/r) the schwa is kept (happen → ˈhæpən).
+
+    Runs BEFORE flapping so the /t/ in 'button' ends up adjacent to /n/ (no
+    intervocalic context) and therefore does not flap. Returns a new list.
+    """
+    out: list[str] = []
+    i = 0
+    while i < len(phones):
+        # match  <trigger>  AH0  N
+        if (
+            i + 2 < len(phones)
+            and _base(phones[i]) in SYLLABIC_N_TRIGGERS
+            and phones[i + 1] == 'AH0'
+            and _base(phones[i + 2]) == 'N'
+        ):
+            out.append(phones[i])      # keep the trigger consonant
+            out.append(phones[i + 2])  # keep N, drop the AH0 between them
+            i += 3
+            continue
+        out.append(phones[i])
+        i += 1
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Word-level conversion
 # ---------------------------------------------------------------------------
 
 def word_to_ipa(phones: list[str]) -> str:
     """Convert a single word's ARPAbet phone list to an IPA string with stress marks."""
+    phones = _apply_syllabic_n(phones)
     phones = _apply_flapping(phones)
     syllables = syllabify(phones)
     parts: list[str] = []

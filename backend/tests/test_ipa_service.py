@@ -159,7 +159,7 @@ def test_generate_ipa_blank_sentence():
 @pytest.mark.parametrize("text,expected_ipa", [
     ("Hello world",    "həˈloʊ ˈwɜːrld"),
     ("today",          "təˈdeɪ"),
-    ("information",    "ˌɪnfərˈmeɪʃən"),
+    ("information",    "ˌɪnfərˈmeɪʃn"),   # -tion → syllabic n (schwa dropped)
     ("computer",       "kəmˈpjuːt̬ər"),   # maximal-onset stress + flapped t̬
     # Oxford-American rule anchors (length marks + rhoticity)
     ("transport",      "ˈtrænspɔːrt"),   # AO → ɔː, rhotic r kept
@@ -176,6 +176,17 @@ def test_generate_ipa_blank_sentence():
     # Flapping allophony
     ("water",          "ˈwɔːt̬ər"),       # intervocalic /t/ → t̬
     ("attack",         "əˈtæk"),         # /t/ before STRESSED vowel → stays t
+    # Syllabic-n — OALD-US drops schwa before /n/ after coronal/labiodental
+    ("station",        "ˈsteɪʃn"),       # SH AH0 N → ʃn
+    ("question",       "ˈkwestʃn"),      # CH AH0 N → tʃn
+    ("action",         "ˈækʃn"),         # SH AH0 N → ʃn
+    ("button",         "ˈbʌtn"),         # T AH0 N → tn, /t/ NOT flapped
+    ("listen",         "ˈlɪsn"),         # S AH0 N → sn
+    ("seven",          "ˈsevn"),         # V AH0 N → vn
+    # Schwa KEPT after non-coronal places (no syllabic n)
+    ("happen",         "ˈhæpən"),        # P → schwa stays
+    ("bacon",          "ˈbeɪkən"),       # K → schwa stays
+    ("common",         "ˈkɑːmən"),       # M → schwa stays
 ])
 def test_generate_ipa_known_outputs(text: str, expected_ipa: str):
     """Spot-check known IPA outputs to catch regressions in conversion logic."""
