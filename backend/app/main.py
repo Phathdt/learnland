@@ -7,8 +7,9 @@ app = FastAPI(title="YouTube Transcript API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    # Must be False when allow_origins is "*" (browsers reject "*" + credentials).
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

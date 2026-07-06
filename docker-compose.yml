@@ -16,5 +16,38 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      # In-network Postgres: service name "postgres", internal port 5432.
+      DATABASE_URL: postgresql+psycopg://ytapp:ytapp@postgres:5432/ytapp
+      WHISPER_MODEL: base
+    # Apply migrations before serving (backend uses Alembic, not create_all).
+    command: >
+      sh -c "uv run alembic upgrade head &&
+             uv run uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist faster-whisper model downloads across restarts.
+      - whisper_cache:/root/.cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser calls the backend directly (CORS-enabled). Baked at build time.
+        VITE_API_URL: http://localhost:8000
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
+  whisper_cache:

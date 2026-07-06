@@ -1,7 +1,11 @@
 import axios from 'axios'
 
+// Backend origin, baked at build time. Defaults to the local dev backend.
+// The backend mounts all routes under /api, so append it once here.
+export const API_BASE = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8000'}/api`
+
 export const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -48,7 +52,7 @@ export async function streamTranscribe(
   handlers: SSEHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch('/api/transcribe', {
+  const response = await fetch(`${API_BASE}/transcribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
