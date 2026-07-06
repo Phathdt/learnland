@@ -62,7 +62,7 @@ export default function App() {
         <button
           type="button"
           className="absolute inset-0 bg-black/50"
-          aria-label="Đóng lịch sử"
+          aria-label="Close history"
           tabIndex={drawerOpen ? 0 : -1}
           onClick={() => setDrawerOpen(false)}
         />
@@ -76,18 +76,18 @@ export default function App() {
           )}
           role="dialog"
           aria-modal="true"
-          aria-label="Lịch sử transcript"
+          aria-label="Transcript history"
         >
           <div className="flex items-center justify-between border-b px-4 py-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Lịch sử
+              History
             </h2>
             <Button
               variant="ghost"
               size="icon"
               className="h-11 w-11"
               onClick={() => setDrawerOpen(false)}
-              aria-label="Đóng"
+              aria-label="Close"
             >
               <X />
             </Button>
@@ -110,11 +110,11 @@ export default function App() {
             size="icon"
             className="h-11 w-11 md:hidden"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Mở lịch sử"
+            aria-label="Open history"
           >
             <Menu />
           </Button>
-          <h1 className="text-xl font-bold">YouTube Transcript</h1>
+          <h1 className="text-xl font-bold">learnland</h1>
         </header>
 
         <TranscribeForm isRunning={isRunning} onSubmit={start} />

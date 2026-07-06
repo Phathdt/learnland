@@ -25,7 +25,7 @@ export function HistorySidebar({ selectedId, onSelect, showHeader = true }: Hist
       {showHeader && (
         <div className="px-4 py-3 border-b">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Lịch sử
+            History
           </h2>
         </div>
       )}
@@ -43,7 +43,7 @@ export function HistorySidebar({ selectedId, onSelect, showHeader = true }: Hist
         )}
 
         {!isLoading && (!transcripts || transcripts.length === 0) && (
-          <p className="p-4 text-sm text-muted-foreground">Chưa có transcript nào.</p>
+          <p className="p-4 text-sm text-muted-foreground">No transcripts yet.</p>
         )}
 
         {!isLoading && transcripts && transcripts.length > 0 && (

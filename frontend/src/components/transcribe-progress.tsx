@@ -2,10 +2,10 @@ import { Progress } from '@/components/ui/progress'
 import type { TranscribeStage } from '@/hooks/use-transcribe'
 
 const STAGE_LABELS: Record<NonNullable<TranscribeStage>, string> = {
-  caption_check: 'Kiểm tra phụ đề…',
-  download: 'Tải audio…',
-  transcribe: 'Đang nhận diện giọng nói…',
-  ipa: 'Đang tạo phiên âm IPA…',
+  caption_check: 'Checking captions…',
+  download: 'Downloading audio…',
+  transcribe: 'Recognizing speech…',
+  ipa: 'Generating IPA transcription…',
 }
 
 interface TranscribeProgressProps {
@@ -20,7 +20,7 @@ export function TranscribeProgress({ stage, percent, isRunning }: TranscribeProg
   return (
     <div className="space-y-1" role="status" aria-live="polite">
       <p className="text-sm text-muted-foreground">{STAGE_LABELS[stage]}</p>
-      <Progress value={percent} className="h-2" aria-label={`Tiến độ: ${Math.round(percent)}%`} />
+      <Progress value={percent} className="h-2" aria-label={`Progress: ${Math.round(percent)}%`} />
       <p className="text-xs text-muted-foreground text-right">{Math.round(percent)}%</p>
     </div>
   )

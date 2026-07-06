@@ -22,8 +22,8 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
   if (!transcript) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground gap-2">
-        <p className="text-lg font-medium">Chưa có transcript</p>
-        <p className="text-sm">Nhập URL YouTube và nhấn Transcribe để bắt đầu.</p>
+        <p className="text-lg font-medium">No transcript yet</p>
+        <p className="text-sm">Enter a YouTube URL and click Transcribe to get started.</p>
       </div>
     )
   }

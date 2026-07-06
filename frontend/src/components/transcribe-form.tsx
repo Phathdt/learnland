@@ -42,7 +42,7 @@ export function TranscribeForm({ isRunning, onSubmit }: TranscribeFormProps) {
         {isRunning ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-            Đang xử lý…
+            Processing…
           </>
         ) : (
           'Transcribe'
