@@ -22,6 +22,7 @@ class TranscribeResult:
     text: str
     language: str
     duration: Optional[float]  # seconds
+    segments: list[dict]  # list of {"start": float, "end": float, "text": str}
 
 
 # ---------------------------------------------------------------------------
@@ -85,10 +86,17 @@ def transcribe(
 
     total_duration: float = info.duration or 0.0
     parts: list[str] = []
+    seg_list: list[dict] = []
 
     try:
         for segment in segments_gen:
-            parts.append(segment.text.strip())
+            stripped = segment.text.strip()
+            parts.append(stripped)
+            seg_list.append({
+                "start": float(segment.start),
+                "end": float(segment.end),
+                "text": stripped,
+            })
             if on_progress and total_duration > 0:
                 pct = min(100.0, (segment.end / total_duration) * 100.0)
                 on_progress(pct)
@@ -106,4 +114,5 @@ def transcribe(
         text=text,
         language=info.language or "unknown",
         duration=total_duration if total_duration > 0 else None,
+        segments=seg_list,
     )

@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, Index, Integer, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -26,6 +27,8 @@ class Transcript(Base):
     source: Mapped[str] = mapped_column(Text, nullable=False)
     language: Mapped[str | None] = mapped_column(Text, nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    # list of {"start": float, "end": float, "text": str} — nullable for legacy rows
+    segments: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
     duration_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -59,16 +59,18 @@ async def _transcribe_stream(url: str, db: Session) -> AsyncGenerator[str, None]
             return
 
         content: Optional[str] = None
+        segments: Optional[list] = None
         source: str
         language: Optional[str] = None
 
         if info.has_caption:
             try:
-                caption_text = await loop.run_in_executor(None, get_caption, url)
-                if caption_text and caption_text.strip():
-                    content = caption_text.strip()
+                caption = await loop.run_in_executor(None, get_caption, url)
+                if caption and caption.text.strip():
+                    content = caption.text.strip()
+                    segments = caption.segments
                     source = "youtube_caption"
-                    language = info.caption_langs[0] if info.caption_langs else None
+                    language = caption.language  # use resolved lang, not alphabetical sort
             except YouTubeError:
                 content = None  # fall through to whisper
 
@@ -115,6 +117,7 @@ async def _transcribe_stream(url: str, db: Session) -> AsyncGenerator[str, None]
                 return
 
             content = result.text
+            segments = result.segments
             source = "whisper"
             language = result.language
 
@@ -125,6 +128,7 @@ async def _transcribe_stream(url: str, db: Session) -> AsyncGenerator[str, None]
             source=source,
             language=language,
             content=content,
+            segments=segments,
             duration_sec=info.duration,
         ))
         # saved is None only on a race-dedup IntegrityError — re-fetch the winner row

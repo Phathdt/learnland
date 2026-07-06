@@ -17,6 +17,14 @@ class TranscribeRequest(BaseModel):
         return v
 
 
+class Segment(BaseModel):
+    """A single time-coded transcript cue for shadowing/karaoke playback."""
+
+    start: float  # seconds
+    end: float    # seconds
+    text: str
+
+
 class TranscriptOut(BaseModel):
     id: uuid.UUID
     video_url: str
@@ -25,6 +33,7 @@ class TranscriptOut(BaseModel):
     source: str
     language: Optional[str]
     content: str
+    segments: Optional[list[Segment]] = None
     duration_sec: Optional[int]
     created_at: datetime
 

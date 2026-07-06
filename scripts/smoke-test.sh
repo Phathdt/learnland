@@ -143,6 +143,32 @@ if [[ -n "$done1" ]]; then
     bad "  source không hợp lệ: '$src1'"
   fi
   if [[ "${clen:-0}" -gt 0 ]]; then ok "  content dài $clen ký tự"; else bad "  content rỗng"; fi
+  # kiểm tra segments non-empty với đúng shape
+  slen="$(echo "$done1" | jq 'if .segments then (.segments | length) else 0 end' 2>/dev/null)"
+  if [[ "${slen:-0}" -gt 0 ]]; then
+    ok "  segments: $slen cue"
+    seg0_ok="$(echo "$done1" | jq '
+      if .segments and (.segments | length) > 0 then
+        (.segments[0] | has("start") and has("end") and has("text"))
+      else false end' 2>/dev/null)"
+    if [[ "$seg0_ok" == "true" ]]; then
+      ok "  segments[0] có đủ start/end/text"
+    else
+      bad "  segments[0] thiếu trường start/end/text"
+    fi
+    monotonic="$(echo "$done1" | jq '
+      [.segments[].start] as $s
+      | if ($s | length) > 1
+        then [range(1; $s | length)] | all(. as $i | $s[$i] >= $s[$i-1])
+        else true end' 2>/dev/null)"
+    if [[ "$monotonic" == "true" ]]; then
+      ok "  segments.start tăng dần (monotonic)"
+    else
+      bad "  segments.start không tăng dần"
+    fi
+  else
+    bad "  segments rỗng hoặc null trong payload done"
+  fi
   # kiểm tra có ít nhất 1 event progress
   if grep -q '^event: progress$' "$sse1"; then
     ok "  có event 'progress' (stream hoạt động)"

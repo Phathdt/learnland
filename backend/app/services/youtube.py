@@ -2,7 +2,6 @@
 
 import logging
 import os
-import re
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,6 +10,7 @@ from typing import Optional
 import yt_dlp
 
 from app.services.url_utils import InvalidYouTubeURLError, canonical_url, extract_video_id
+from app.services.vtt_parser import parse_vtt_segments
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,14 @@ class VideoInfo:
     duration: Optional[int]  # seconds
     has_caption: bool
     caption_langs: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Caption:
+    """Result of get_caption: plain text (for content column) + timed segments."""
+    text: str
+    segments: list[dict]  # list of {"start": float, "end": float, "text": str}
+    language: str          # the resolved subtitle language code (e.g. "en", "en-US")
 
 
 # --- Internal helpers --------------------------------------------------------
@@ -46,21 +54,6 @@ def _raise_on_ydl_error(url: str, exc: Exception) -> None:
     if any(kw in msg for kw in ("not available", "unavailable", "no video")):
         raise YouTubeError("Video is unavailable or region-locked.") from exc
     raise YouTubeError("Could not process the video. Please check the URL and try again.") from exc
-
-
-def _strip_vtt_markup(text: str) -> str:
-    """Remove WebVTT timestamps and tags, return deduplicated plain text."""
-    lines: list[str] = []
-    seen: set[str] = set()
-    for line in text.splitlines():
-        line = line.strip()
-        if not line or line.startswith("WEBVTT") or "-->" in line:
-            continue
-        line = re.sub(r"<[^>]+>", "", line).strip()
-        if line and line not in seen:
-            seen.add(line)
-            lines.append(line)
-    return "\n".join(lines)
 
 
 # --- Public API --------------------------------------------------------------
@@ -96,8 +89,8 @@ def extract_info(url: str) -> VideoInfo:
     )
 
 
-def get_caption(url: str, lang: str = "en") -> Optional[str]:
-    """Fetch caption text for a video, returning None if unavailable."""
+def get_caption(url: str, lang: str = "en") -> Optional[Caption]:
+    """Fetch caption text and segments for a video, returning None if unavailable."""
     video_id = extract_video_id(url)
     safe_url = canonical_url(video_id)
 
@@ -157,8 +150,12 @@ def get_caption(url: str, lang: str = "en") -> Optional[str]:
 
         for fname in os.listdir(tmp):
             if fname.endswith((".vtt", ".json3", ".srt")):
-                text = Path(os.path.join(tmp, fname)).read_text(encoding="utf-8")
-                return _strip_vtt_markup(text) or None
+                vtt_text = Path(os.path.join(tmp, fname)).read_text(encoding="utf-8")
+                segments = parse_vtt_segments(vtt_text)
+                if not segments:
+                    return None
+                text = " ".join(s["text"] for s in segments)
+                return Caption(text=text, segments=segments, language=chosen_lang)
 
     return None
 

@@ -7,11 +7,16 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from tests.conftest import collect_sse, seed_transcript
-from app.services.youtube import VideoInfo, YouTubeError
+from app.services.youtube import VideoInfo, YouTubeError, Caption
 
 
 VIDEO_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 VIDEO_ID = "dQw4w9WgXcQ"
+
+SAMPLE_SEGMENTS = [
+    {"start": 0.0, "end": 3.5, "text": "Never gonna give you up"},
+    {"start": 3.5, "end": 7.0, "text": "Never gonna let you down"},
+]
 
 
 def _make_info(has_caption: bool = True) -> VideoInfo:
@@ -36,7 +41,11 @@ def test_transcribe_caption_path(client, db, monkeypatch):
     )
     monkeypatch.setattr(
         "app.routers.transcribe.get_caption",
-        lambda url: "Never gonna give you up never gonna let you down",
+        lambda url: Caption(
+            text="Never gonna give you up never gonna let you down",
+            segments=SAMPLE_SEGMENTS,
+            language="en",
+        ),
     )
     whisper_mock = MagicMock()
     monkeypatch.setattr("app.routers.transcribe.transcribe", whisper_mock)
@@ -50,6 +59,14 @@ def test_transcribe_caption_path(client, db, monkeypatch):
     assert data["source"] == "youtube_caption"
     assert "never gonna" in data["content"].lower()
     whisper_mock.assert_not_called()
+
+    # Segments must be present and non-empty with correct fields
+    assert data["segments"], "Expected non-empty segments in done payload"
+    assert len(data["segments"]) == len(SAMPLE_SEGMENTS)
+    first = data["segments"][0]
+    assert "start" in first and "end" in first and "text" in first
+    assert isinstance(first["start"], float)
+    assert isinstance(first["end"], float)
 
 
 # ---------------------------------------------------------------------------
@@ -76,11 +93,21 @@ def test_transcribe_whisper_path(client, db, monkeypatch, tmp_path):
 
     from app.services.transcriber import TranscribeResult
 
+    whisper_segments = [
+        {"start": 0.0, "end": 4.2, "text": "Whispered content"},
+        {"start": 4.2, "end": 8.1, "text": "More whispered text"},
+    ]
+
     def _fake_transcribe(path, on_progress=None):
         if on_progress:
             on_progress(50.0)
             on_progress(100.0)
-        return TranscribeResult(text="Whispered content", language="en", duration=212.0)
+        return TranscribeResult(
+            text="Whispered content More whispered text",
+            language="en",
+            duration=212.0,
+            segments=whisper_segments,
+        )
 
     monkeypatch.setattr("app.routers.transcribe.transcribe", _fake_transcribe)
 
@@ -92,6 +119,14 @@ def test_transcribe_whisper_path(client, db, monkeypatch, tmp_path):
     data = done_events[0]["data"]
     assert data["source"] == "whisper"
     assert "whispered" in data["content"].lower()
+
+    # Segments must be present for whisper path too
+    assert data["segments"], "Expected non-empty segments in whisper done payload"
+    assert len(data["segments"]) == len(whisper_segments)
+    first = data["segments"][0]
+    assert first["start"] == 0.0
+    assert first["end"] == 4.2
+    assert "whispered" in first["text"].lower()
 
     # Progress events for transcribe stage should appear
     progress_events = [

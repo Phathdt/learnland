@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { ShadowingPlayer } from '@/components/shadowing-player'
 import type { TranscriptResult } from '@/api/client'
 
 interface TranscriptViewProps {
@@ -31,6 +32,8 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
     ? `${Math.floor(transcript.duration_sec / 60)}m ${transcript.duration_sec % 60}s`
     : null
 
+  const hasSegments = Array.isArray(transcript.segments) && transcript.segments.length > 0
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -52,9 +55,16 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-96 rounded-md border p-4">
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{transcript.content}</p>
-        </ScrollArea>
+        {hasSegments ? (
+          <ShadowingPlayer
+            videoId={transcript.video_id}
+            segments={transcript.segments!}
+          />
+        ) : (
+          <ScrollArea className="h-96 rounded-md border p-4">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{transcript.content}</p>
+          </ScrollArea>
+        )}
       </CardContent>
     </Card>
   )

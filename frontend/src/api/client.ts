@@ -12,6 +12,12 @@ export interface ProgressEvent {
   percent: number
 }
 
+export interface TranscriptSegment {
+  start: number
+  end: number
+  text: string
+}
+
 export interface TranscriptResult {
   id: string
   video_url: string
@@ -20,6 +26,7 @@ export interface TranscriptResult {
   source: string
   language: string | null
   content: string
+  segments?: TranscriptSegment[] | null
   duration_sec: number | null
   created_at: string
 }
