@@ -81,7 +81,10 @@ export function ShadowingPlayer({ videoId, segments }: ShadowingPlayerProps) {
       {/* Hướng dẫn 6 bước — hiển thị phía trên player */}
       <ShadowingStepGuide activeStep={activeStep} onSelectStep={applyStep} />
 
-      <YouTubePlayer containerRef={containerRef} />
+      {/* Giới hạn bề rộng video để không chiếm hết màn hình; căn giữa */}
+      <div className="w-full max-w-2xl mx-auto">
+        <YouTubePlayer containerRef={containerRef} />
+      </div>
 
       <PlayerControls
         isPlaying={isPlaying}

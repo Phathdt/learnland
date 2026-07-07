@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useParams } from '@tanstack/react-router'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { HistorySidebar } from '@/components/history-sidebar'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,8 @@ import type { TranscriptResult } from '@/api/client'
 export function AppLayout() {
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  // Collapse the persistent desktop sidebar to give the main panel more room.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Highlight the sidebar item matching the current /video/$id route, if any.
   const params = useParams({ strict: false }) as { id?: string }
@@ -36,8 +38,13 @@ export function AppLayout() {
 
   return (
     <div className="flex h-dvh overflow-hidden">
-      {/* Sidebar — persistent on desktop (md+) */}
-      <div className="hidden md:flex md:w-72 flex-shrink-0 flex-col overflow-hidden">
+      {/* Sidebar — persistent on desktop (md+), collapsible */}
+      <div
+        className={cn(
+          'hidden md:flex flex-shrink-0 flex-col overflow-hidden transition-all duration-200',
+          sidebarCollapsed ? 'md:w-0' : 'md:w-72',
+        )}
+      >
         <HistorySidebar selectedId={selectedId} onSelect={handleSelect} />
       </div>
 
@@ -106,6 +113,19 @@ export function AppLayout() {
             aria-label="Open history"
           >
             <Menu />
+          </Button>
+
+          {/* Desktop-only: toggle the persistent sidebar */}
+          <Button
+            variant="outline"
+            size="icon"
+            className="hidden md:inline-flex h-9 w-9"
+            onClick={() => setSidebarCollapsed((v) => !v)}
+            aria-pressed={sidebarCollapsed}
+            aria-label={sidebarCollapsed ? 'Show history sidebar' : 'Hide history sidebar'}
+            title={sidebarCollapsed ? 'Show history' : 'Hide history'}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
           </Button>
           <button
             type="button"
