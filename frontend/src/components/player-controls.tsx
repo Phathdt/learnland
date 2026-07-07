@@ -1,15 +1,15 @@
 /**
  * Transport controls cho shadowing player:
  * play/pause, seek ±5s, prev/next segment,
- * segmented speed control (0.5x / 0.75x / 1x), toggle ẩn/hiện transcript.
+ * segmented speed control (0.5x / 0.75x / 1x / 1.5x / 2x), toggle ẩn/hiện transcript.
  */
 
 import { Pause, Play, SkipBack, SkipForward, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-// Các mức tốc độ hỗ trợ — YouTube IFrame API chấp nhận 0.5, 0.75, 1.0
-const SPEEDS = [0.5, 0.75, 1] as const
+// Các mức tốc độ hỗ trợ — YouTube IFrame API chấp nhận 0.5, 0.75, 1, 1.5, 2
+const SPEEDS = [0.5, 0.75, 1, 1.5, 2] as const
 type Speed = (typeof SPEEDS)[number]
 
 interface PlayerControlsProps {
