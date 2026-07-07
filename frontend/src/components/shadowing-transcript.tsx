@@ -33,11 +33,11 @@ export function ShadowingTranscript({
     const viewport = el.closest<HTMLElement>('[data-slot="scroll-area-viewport"]')
     if (!viewport) return
 
-    // Pin the active segment to the top of the viewport so it always sits in
-    // the first row, rather than drifting to the 2nd/3rd position over time.
+    // Offset of the element relative to the viewport's current scroll position,
+    // then adjust so the element ends up centered in the viewport.
     const elRect = el.getBoundingClientRect()
     const vpRect = viewport.getBoundingClientRect()
-    const delta = elRect.top - vpRect.top
+    const delta = elRect.top - vpRect.top - viewport.clientHeight / 2 + el.clientHeight / 2
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     viewport.scrollTo({
       top: Math.max(0, viewport.scrollTop + delta),
